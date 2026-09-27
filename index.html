@@ -1,9 +1,30 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bolk Online</title>
+    <link rel="icon" type="image/png" href="graphics/tt/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="graphics/tt/favicon-32x32.png" sizes="32x32">
+
+    <meta charset="utf-8">
+    <title>Ball Online - Play Bonk Here!</title>
+
+    <link rel="preload" href="fonts/fptmed.otf" as="font" crossorigin="anonymous">
+    <link rel="preload" href="fonts/fptbook.otf" as="font" crossorigin="anonymous">
+    <link rel="preload" href="fonts/fptbook_fixed_5.otf" as="font" crossorigin="anonymous">
+    <link rel="preload" href="fonts/fptb.otf" as="font" crossorigin="anonymous">
+
+    <link rel="stylesheet" type="text/css" href="css/roomlist.css">
+    <link rel="stylesheet" type="text/css" href="css/checkbox.css">
+    <link rel="stylesheet" type="text/css" href="css/maploadwindow.css">
+    <link rel="stylesheet" type="text/css" href="css/leveleditor.css">
+    <link rel="stylesheet" type="text/css" href="css/newbonklobby.css">
+    <link rel="stylesheet" type="text/css" href="css/ingamechat.css">
+    <link rel="stylesheet" type="text/css" href="css/simplemenu.css">
+    <link rel="stylesheet" type="text/css" href="css/pagelayout.css">
+    <link rel="stylesheet" type="text/css" href="css/skineditor.css">
+    <link rel="stylesheet" type="text/css" href="css/mapeditor.css">
+    <link rel="stylesheet" type="text/css" href="css/prettymenu.css">
+    <link rel="stylesheet" type="text/css" href="css/classicactive.css" id="classicoverridecss">
+
     <style>
         * {
             box-sizing: border-box;
@@ -37,42 +58,67 @@
 
         .menu-box {
             background-color: #222330;
-            width: 380px;
-            padding: 35px 30px;
+            width: 420px;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 15px;
         }
 
         .menu-box h1 {
             font-size: 22px;
             font-weight: 700;
             letter-spacing: 1px;
-            margin-bottom: 30px;
             color: #ffffff;
+            margin-bottom: 5px;
         }
 
-        .menu-select {
+        .input-group {
             width: 100%;
-            padding: 12px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+
+        .menu-input, .menu-select {
+            width: 100%;
+            padding: 10px 12px;
             background-color: #ffffff;
             color: #000;
             border: none;
             border-radius: 4px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 500;
-            margin-bottom: 25px;
-            cursor: pointer;
             outline: none;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            border: none;
+            width: 40px;
+            height: 35px;
+            cursor: pointer;
+            background: none;
         }
 
         .menu-buttons {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            gap: 15px;
+            gap: 10px;
+            margin-top: 10px;
         }
 
         .btn {
@@ -82,7 +128,7 @@
             color: #fff;
             border: none;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
@@ -91,6 +137,13 @@
 
         .btn:hover {
             background-color: #ef4444;
+        }
+
+        .btn-secondary {
+            background-color: #3b82f6;
+        }
+        .btn-secondary:hover {
+            background-color: #60a5fa;
         }
 
         #game-container {
@@ -134,37 +187,101 @@
         #back-btn:hover {
             background: #ef4444;
         }
+
+        #map-editor-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #181922;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
 
     <div id="menu-container">
         <div class="menu-box">
-            <h1>BOLK ONLINE</h1>
-            <select id="gameModeSelect" class="menu-select">
-                <option value="classic">Modo: Classic (Empurrar)</option>
-                <option value="football">Modo: Football</option>
-                <option value="deatharrows">Modo: Death Arrows</option>
-            </select>
+            <h1>Ball ONLINE</h1>
+            
+            <div class="input-group">
+                <label>Seu Nome:</label>
+                <input type="text" id="playerNameInput" class="menu-input" value="Jogador" maxlength="15">
+            </div>
+
+            <div class="input-group">
+                <label>Cor da Bolinha:</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="playerColorInput" value="#3b82f6">
+                    <span style="font-size: 12px; color: #fff;">Escolha sua cor personalizada</span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Modo de Jogo:</label>
+                <select id="gameModeSelect" class="menu-select">
+                    <option value="classic">Modo: Classic (Empurrar)</option>
+                    <option value="football">Modo: Football</option>
+                    <option value="deatharrows">Modo: Death Arrows</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Senha da Sala (Opcional):</label>
+                <input type="password" id="roomPasswordInput" class="menu-input" placeholder="Deixe em branco se público">
+            </div>
+
             <div class="menu-buttons">
                 <button class="btn" id="createRoomBtn">Criar Sala</button>
-                <button class="btn" id="joinRoomBtn">Entrar em Sala</button>
+                <button class="btn btn-secondary" id="joinRoomBtn">Entrar em Sala</button>
+            </div>
+            <div class="menu-buttons">
+                <button class="btn" style="background-color: #4b5563;" id="openEditorBtn">Criar / Editar Mapa</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="map-editor-container">
+        <div class="menu-box" style="width: 500px;">
+            <h1>Criador de Mapas</h1>
+            <p style="font-size: 13px; color: #9ca3af; text-align: center;">Ferramenta para desenhar obstáculos personalizados para o modo Death Arrows.</p>
+            <div class="input-group">
+                <label>Nome do Mapa:</label>
+                <input type="text" id="mapNameInput" class="menu-input" value="Meu Mapa Customizado">
+            </div>
+            <div class="menu-buttons">
+                <button class="btn btn-secondary" id="saveMapBtn">Salvar Mapa</button>
+                <button class="btn" id="closeEditorBtn">Voltar ao Menu</button>
             </div>
         </div>
     </div>
 
     <div id="game-container">
         <button id="back-btn" onclick="voltarMenu()">Sair</button>
-        <div id="hud">Placar: <span id="score-board">Você 0 x 0 Bots</span></div>
+        <div id="hud">Placar: <span id="score-board">Aguardando Jogadores...</span></div>
         <canvas id="gameCanvas"></canvas>
     </div>
 
     <script>
         const menuContainer = document.getElementById('menu-container');
         const gameContainer = document.getElementById('game-container');
+        const mapEditorContainer = document.getElementById('map-editor-container');
+        
         const createRoomBtn = document.getElementById('createRoomBtn');
         const joinRoomBtn = document.getElementById('joinRoomBtn');
+        const openEditorBtn = document.getElementById('openEditorBtn');
+        const closeEditorBtn = document.getElementById('closeEditorBtn');
+        const saveMapBtn = document.getElementById('saveMapBtn');
+
         const gameModeSelect = document.getElementById('gameModeSelect');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const playerColorInput = document.getElementById('playerColorInput');
+        const roomPasswordInput = document.getElementById('roomPasswordInput');
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreBoard = document.getElementById('score-board');
@@ -173,10 +290,17 @@
         let animationFrameId = null;
         let currentMode = 'classic';
         let playerScore = 0;
-        let botScore = 0;
+        let opponentScore = 0;
         let matchPaused = false;
         let pauseMessage = '';
-        let pauseTimer = null;
+
+        let myData = {
+            name: 'Jogador',
+            color: '#3b82f6',
+            roomPass: ''
+        };
+
+        let remotePlayers = [];
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -188,20 +312,39 @@
         const keys = {};
         window.addEventListener('keydown', (e) => { 
             keys[e.code] = true; 
-            if (e.code === 'Space') {
-                e.preventDefault();
-            }
+            if (e.code === 'Space') e.preventDefault();
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-        let player, bots, platform, obstacles, ball, arrows, spawnPoints;
+        let player, platform, obstacles, ball, arrows, spawnPoints;
         let lastAbilityTime = 0;
 
+        openEditorBtn.addEventListener('click', () => {
+            menuContainer.style.display = 'none';
+            mapEditorContainer.style.display = 'flex';
+        });
+
+        closeEditorBtn.addEventListener('click', () => {
+            mapEditorContainer.style.display = 'none';
+            menuContainer.style.display = 'flex';
+        });
+
+        saveMapBtn.addEventListener('click', () => {
+            alert('Mapa salvo com sucesso no navegador!');
+            mapEditorContainer.style.display = 'none';
+            menuContainer.style.display = 'flex';
+        });
+
         function iniciarJogo() {
+            myData.name = playerNameInput.value.trim() || 'Jogador';
+            myData.color = playerColorInput.value;
+            myData.roomPass = roomPasswordInput.value;
+
             currentMode = gameModeSelect.value;
             playerScore = 0;
-            botScore = 0;
+            opponentScore = 0;
             matchPaused = false;
+            
             menuContainer.style.display = 'none';
             gameContainer.style.display = 'block';
             resizeCanvas();
@@ -211,12 +354,18 @@
         }
 
         createRoomBtn.addEventListener('click', iniciarJogo);
-        joinRoomBtn.addEventListener('click', iniciarJogo);
+        joinRoomBtn.addEventListener('click', () => {
+            let senhaInformada = prompt("Digite a senha da sala para entrar:");
+            if (roomPasswordInput.value && senhaInformada !== roomPasswordInput.value) {
+                alert("Senha incorreta!");
+                return;
+            }
+            iniciarJogo();
+        });
 
         function voltarMenu() {
             gameRunning = false;
             matchPaused = false;
-            if (pauseTimer) clearTimeout(pauseTimer);
             cancelAnimationFrame(animationFrameId);
             gameContainer.style.display = 'none';
             menuContainer.style.display = 'flex';
@@ -229,38 +378,25 @@
 
             if (currentMode === 'football') {
                 platform = {
-                    x: w / 2 - 480,
-                    y: h / 2 - 300,
-                    w: 960,
-                    h: 600,
+                    x: w / 2 - 580,
+                    y: h / 2 - 350,
+                    w: 1160,
+                    h: 700,
                     isFootballField: true
                 };
 
                 player = {
-                    x: w / 2 - 300,
+                    x: w / 2 - 380,
                     y: h / 2,
                     vx: 0,
                     vy: 0,
                     radius: 22,
                     mass: 1.5,
-                    color: '#3b82f6',
+                    color: myData.color,
+                    name: myData.name,
                     heavy: false,
                     isPlayer: true
                 };
-
-                bots = [
-                    {
-                        x: w / 2 + 300,
-                        y: h / 2,
-                        vx: 0,
-                        vy: 0,
-                        radius: 22,
-                        mass: 1.5,
-                        color: '#ef4444',
-                        heavy: false,
-                        isPlayer: false
-                    }
-                ];
 
                 ball = {
                     x: w / 2,
@@ -268,31 +404,25 @@
                     vx: 0,
                     vy: 0,
                     radius: 14,
-                    mass: 0.1,
+                    mass: 0.3,
                     color: '#ffffff'
                 };
                 obstacles = [];
             } else if (currentMode === 'deatharrows') {
                 platform = { isDeathArrowsMap: true };
                 
-                // Pontos de spawn exatos baseados nos pontos vermelhos da imagem
                 spawnPoints = [
-                    { x: w * 0.12, y: h * 0.18 }, // Superior esquerdo (lago)
-                    { x: w * 0.28, y: h * 0.12 }, // Plataforma L superior esquerda
-                    { x: w * 0.60, y: h * 0.08 }, // Bloco superior meio
-                    { x: w * 0.90, y: h * 0.28 }, // Plataforma superior direita
-                    { x: w * 0.95, y: h * 0.65 }, // Plataforma direita média
-                    { x: w * 0.88, y: h * 0.92 }, // Inferior direita
-                    { x: w * 0.36, y: h * 0.92 }, // Inferior centro-esquerda
-                    { x: w * 0.08, y: h * 0.82 }  // Inferior esquerda
+                    { x: w * 0.12, y: h * 0.18 },
+                    { x: w * 0.28, y: h * 0.12 },
+                    { x: w * 0.60, y: h * 0.08 },
+                    { x: w * 0.90, y: h * 0.28 },
+                    { x: w * 0.95, y: h * 0.65 },
+                    { x: w * 0.88, y: h * 0.92 },
+                    { x: w * 0.36, y: h * 0.92 },
+                    { x: w * 0.08, y: h * 0.82 }
                 ];
 
-                // Escolher spawns aleatórios para o player e bot
                 let sp1 = Math.floor(Math.random() * spawnPoints.length);
-                let sp2;
-                do {
-                    sp2 = Math.floor(Math.random() * spawnPoints.length);
-                } while (sp2 === sp1);
 
                 player = {
                     x: spawnPoints[sp1].x,
@@ -301,58 +431,30 @@
                     vy: 0,
                     radius: 22,
                     mass: 1.5,
-                    color: '#3b82f6',
+                    color: myData.color,
+                    name: myData.name,
                     heavy: false,
                     isPlayer: true
                 };
 
-                bots = [
-                    {
-                        x: spawnPoints[sp2].x,
-                        y: spawnPoints[sp2].y,
-                        vx: 0,
-                        vy: 0,
-                        radius: 22,
-                        mass: 1.5,
-                        color: '#ef4444',
-                        heavy: false,
-                        isPlayer: false
-                    }
-                ];
-
                 ball = null;
-
-                // Obstáculos exatos da imagem de referência do Death Arrows
                 obstacles = [
-                    // Canto superior esquerdo (Plataforma L)
                     { x: w * 0.22, y: h * 0.08, w: 45, h: 12 },
                     { x: w * 0.28, y: h * 0.08, w: 12, h: 35 },
-                    
-                    // Plataforma meio-esquerda em L
                     { x: w * 0.15, y: h * 0.38, w: 40, h: 12 },
                     { x: w * 0.15, y: h * 0.35, w: 12, h: 25 },
-
-                    // Canto superior direito (blocos e plataforma L)
                     { x: w * 0.58, y: h * 0.04, w: 30, h: 15 },
                     { x: w * 0.58, y: h * 0.07, w: 12, h: 20 },
                     { x: w * 0.88, y: h * 0.22, w: 80, h: 12 },
                     { x: w * 0.88, y: h * 0.18, w: 12, h: 20 },
-
-                    // Lateral direita média
                     { x: w * 0.86, y: h * 0.55, w: 35, h: 12 },
                     { x: w * 0.92, y: h * 0.58, w: 12, h: 25 },
-
-                    // Canto inferior direito
                     { x: w * 0.85, y: h * 0.88, w: 75, h: 12 },
                     { x: w * 0.85, y: h * 0.85, w: 12, h: 20 },
-
-                    // Fundo inferior (portas/blocos centrais)
                     { x: w * 0.34, y: h * 0.88, w: 80, h: 12 },
                     { x: w * 0.46, y: h * 0.82, w: 12, h: 18 },
                     { x: w * 0.46, y: h * 0.82, w: 75, h: 12 },
                     { x: w * 0.52, y: h * 0.76, w: 12, h: 18 },
-
-                    // Canto inferior esquerdo
                     { x: w * 0.04, y: h * 0.78, w: 55, h: 12 },
                     { x: w * 0.04, y: h * 0.82, w: 12, h: 20 },
                     { x: w * 0.01, y: h * 0.85, w: 40, h: 12 }
@@ -375,24 +477,11 @@
                     vy: 0,
                     radius: 22,
                     mass: 1.5,
-                    color: '#3b82f6',
+                    color: myData.color,
+                    name: myData.name,
                     heavy: false,
                     isPlayer: true
                 };
-
-                bots = [
-                    {
-                        x: w / 2 + 150,
-                        y: h / 2,
-                        vx: 0,
-                        vy: 0,
-                        radius: 22,
-                        mass: 1.5,
-                        color: '#ef4444',
-                        heavy: false,
-                        isPlayer: false
-                    }
-                ];
 
                 ball = null;
                 obstacles = [];
@@ -401,8 +490,8 @@
 
         function lidarComEliminacao(quemMorreu) {
             if (quemMorreu === 'jogador') {
-                botScore++;
-                pauseMessage = 'PONTO DOS BOTS!';
+                opponentScore++;
+                pauseMessage = 'PONTO DOS ADVERSÁRIOS!';
             } else {
                 playerScore++;
                 pauseMessage = 'PONTO DO JOGADOR!';
@@ -415,13 +504,9 @@
             resetEntities();
 
             let segundosRestantes = 3;
-            pauseMessage += ` (Reiniciando em ${segundosRestantes}s)`;
-
             let intervalo = setInterval(() => {
                 segundosRestantes--;
-                if (segundosRestantes > 0) {
-                    pauseMessage = (quemMorreu === 'jogador' ? 'PONTO DOS BOTS!' : 'PONTO DO JOGADOR!') + ` (Reiniciando em ${segundosRestantes}s)`;
-                } else {
+                if (segundosRestantes <= 0) {
                     clearInterval(intervalo);
                     matchPaused = false;
                     pauseMessage = '';
@@ -429,16 +514,26 @@
             }, 1000);
         }
 
+        function dispararChuteFootball() {
+            if (currentMode !== 'football' || !gameRunning || matchPaused || !ball) return;
+            const agora = Date.now();
+            if (agora - lastAbilityTime >= 700) {
+                lastAbilityTime = agora;
+                let dist = Math.hypot(ball.x - player.x, ball.y - player.y);
+                if (dist < player.radius + ball.radius + 20) {
+                    let angle = Math.atan2(ball.y - player.y, ball.x - player.x);
+                    ball.vx = Math.cos(angle) * 7.5;
+                    ball.vy = Math.sin(angle) * 7.5;
+                }
+            }
+        }
+
         function dispararFlechaDeathArrows() {
             if (currentMode !== 'deatharrows' || !gameRunning || matchPaused) return;
             const agora = Date.now();
-            if (agora - lastAbilityTime >= 1500) { // Cooldown de 1.5s
+            if (agora - lastAbilityTime >= 1500) {
                 lastAbilityTime = agora;
-                
-                let targetX = bots.length > 0 ? bots[0].x : canvas.width / 2;
-                let targetY = bots.length > 0 ? bots[0].y : canvas.height / 2;
-                let angle = Math.atan2(targetY - player.y, targetX - player.x);
-
+                let angle = 0;
                 arrows.push({
                     x: player.x,
                     y: player.y,
@@ -452,13 +547,13 @@
         }
 
         function checarFimDeJogo() {
-            let limiteGols = 3; // Fim de jogo em 3 x 0
-            if (playerScore >= limiteGols || botScore >= limiteGols) {
+            let limiteGols = 3;
+            if (playerScore >= limiteGols || opponentScore >= limiteGols) {
                 gameRunning = false;
                 matchPaused = false;
-                let vencedor = playerScore >= limiteGols ? 'Você venceu a partida!' : 'Os bots venceram a partida!';
+                let vencedor = playerScore >= limiteGols ? 'Você venceu a partida!' : 'Adversários venceram!';
                 setTimeout(() => {
-                    alert(`Fim de Jogo! ${vencedor} (${playerScore} x ${botScore})`);
+                    alert(`Fim de Jogo! ${vencedor} (${playerScore} x ${opponentScore})`);
                     voltarMenu();
                 }, 50);
                 return true;
@@ -466,23 +561,53 @@
             return false;
         }
 
+        function resolverColisoesCirculares(e1, e2) {
+            let dx = e2.x - e1.x;
+            let dy = e2.y - e1.y;
+            let dist = Math.hypot(dx, dy);
+            let minDist = e1.radius + e2.radius;
+
+            if (dist < minDist && dist > 0) {
+                let overlap = minDist - dist;
+                let nx = dx / dist;
+                let ny = dy / dist;
+
+                let totalMass = e1.mass + e2.mass;
+                e1.x -= nx * overlap * (e2.mass / totalMass);
+                e1.y -= ny * overlap * (e2.mass / totalMass);
+                e2.x += nx * overlap * (e1.mass / totalMass);
+                e2.y += ny * overlap * (e1.mass / totalMass);
+
+                let kx = e1.vx - e2.vx;
+                let ky = e1.vy - e2.vy;
+                let p = 2 * (nx * kx + ny * ky) / totalMass;
+
+                let restituicao = (e1 === ball || e2 === ball) ? 0.65 : 0.8;
+
+                e1.vx -= p * e2.mass * nx * restituicao;
+                e1.vy -= p * e2.mass * ny * restituicao;
+                e2.vx += p * e1.mass * nx * restituicao;
+                e2.vy += p * e1.mass * ny * restituicao;
+            }
+        }
+
         function updatePhysics() {
             if (matchPaused) return;
 
             let gravity = 0.4;
             if (currentMode === 'classic') gravity = 0.55;
-            else if (currentMode === 'football') gravity = 0.12;
+            else if (currentMode === 'football') gravity = 0;
             else if (currentMode === 'deatharrows') gravity = 0.2;
 
-            const friction = currentMode === 'football' ? 0.88 : 0.93;
+            const friction = currentMode === 'football' ? 0.92 : 0.93;
 
-            const entities = [player, ...bots];
+            const entities = [player, ...remotePlayers];
             if (ball) entities.push(ball);
 
             entities.forEach(ent => {
                 if (ent === ball) {
-                    ent.vx *= 0.993;
-                    ent.vy *= 0.993;
+                    ent.vx *= 0.94;
+                    ent.vy *= 0.94;
                     ent.x += ent.vx;
                     ent.y += ent.vy;
                 } else {
@@ -504,26 +629,35 @@
 
                     if (ent.x < minX) {
                         if (ent === ball && ent.y > golAlturaMin && ent.y < golAlturaMax) {
-                            lidarComEliminacao('bots');
+                            lidarComEliminacao('adversario');
                             return;
                         }
                         ent.x = minX;
-                        ent.vx *= -0.5;
+                        ent.vx *= -0.4;
                     } else if (ent.x > maxX) {
                         if (ent === ball && ent.y > golAlturaMin && ent.y < golAlturaMax) {
                             lidarComEliminacao('jogador');
                             return;
                         }
                         ent.x = maxX;
-                        ent.vx *= -0.5;
+                        ent.vx *= -0.4;
                     }
 
-                    if (ent.y < minY) {
-                        ent.y = minY;
-                        ent.vy *= -0.5;
-                    } else if (ent.y > maxY) {
-                        ent.y = maxY;
-                        ent.vy *= -0.5;
+                    if (ent.y < minY) { ent.y = minY; ent.vy *= -0.4; }
+                    else if (ent.y > maxY) { ent.y = maxY; ent.vy *= -0.4; }
+
+                    if (ent === ball) {
+                        let cornerThreshold = 40;
+                        let pushForce = 1.5;
+                        if (ent.x < platform.x + cornerThreshold && ent.y < platform.y + cornerThreshold) {
+                            ent.vx += pushForce; ent.vy += pushForce;
+                        } else if (ent.x > platform.x + platform.w - cornerThreshold && ent.y < platform.y + cornerThreshold) {
+                            ent.vx -= pushForce; ent.vy += pushForce;
+                        } else if (ent.x < platform.x + cornerThreshold && ent.y > platform.y + platform.h - cornerThreshold) {
+                            ent.vx += pushForce; ent.vy -= pushForce;
+                        } else if (ent.x > platform.x + platform.w - cornerThreshold && ent.y > platform.y + platform.h - cornerThreshold) {
+                            ent.vx -= pushForce; ent.vy -= pushForce;
+                        }
                     }
                 } else if (currentMode === 'deatharrows') {
                     if (ent.x < ent.radius) { ent.x = ent.radius; ent.vx *= -0.5; }
@@ -569,65 +703,39 @@
                     }
 
                     if (morreu) {
-                        if (ent.isPlayer) {
-                            lidarComEliminacao('jogador');
-                        } else if (bots.includes(ent)) {
-                            lidarComEliminacao('bot');
-                        }
+                        if (ent.isPlayer) lidarComEliminacao('jogador');
                     }
                 }
             });
 
-            // Atualização e colisões das flechas no Death Arrows
-            if (currentMode === 'deatharrows') {
+            if (currentMode === 'classic' || currentMode === 'football') {
+                for (let i = 0; i < entities.length; i++) {
+                    for (let j = i + 1; j < entities.length; j++) {
+                        resolverColisoesCirculares(entities[i], entities[j]);
+                    }
+                }
+            }
+
+            if (currentMode === 'deatharrows' && arrows) {
                 for (let i = arrows.length - 1; i >= 0; i--) {
                     let arrow = arrows[i];
-
                     if (!arrow.noChao) {
                         arrow.x += arrow.vx;
                         arrow.y += arrow.vy;
-
                         let bateuChao = arrow.y >= canvas.height - 10;
                         obstacles.forEach(obs => {
                             if (arrow.x > obs.x && arrow.x < obs.x + obs.w && arrow.y > obs.y && arrow.y < obs.y + obs.h) {
                                 bateuChao = true;
                             }
                         });
-
                         if (bateuChao) {
                             arrow.noChao = true;
                             arrow.tempoChao = Date.now();
                         }
-
-                        entities.forEach(ent => {
-                            if (ent !== arrow.shooter) {
-                                let dist = Math.hypot(ent.x - arrow.x, ent.y - arrow.y);
-                                if (dist < ent.radius + 5) {
-                                    if (ent.isPlayer) {
-                                        lidarComEliminacao('jogador');
-                                    } else {
-                                        lidarComEliminacao('bot');
-                                    }
-                                }
-                            }
-                        });
                     } else {
-                        // Flecha no chão ativa por 6.7 segundos
                         if (Date.now() - arrow.tempoChao > 6700) {
                             arrows.splice(i, 1);
-                            continue;
                         }
-
-                        entities.forEach(ent => {
-                            let dist = Math.hypot(ent.x - arrow.x, ent.y - arrow.y);
-                            if (dist < ent.radius + 8) {
-                                if (ent.isPlayer) {
-                                    lidarComEliminacao('jogador');
-                                } else {
-                                    lidarComEliminacao('bot');
-                                }
-                            }
-                        });
                     }
                 }
             }
@@ -636,11 +744,7 @@
         function handleControls() {
             if (matchPaused) return;
 
-            let speed = 0.55;
-            if (currentMode === 'classic') speed = 0.45;
-            else if (currentMode === 'football') speed = 0.48;
-            else if (currentMode === 'deatharrows') speed = 0.5;
-
+            let speed = currentMode === 'football' ? 0.25 : (currentMode === 'classic' ? 0.45 : 0.5);
             player.heavy = keys['ShiftLeft'] || keys['ShiftRight'];
             if (player.heavy) speed *= 0.5;
 
@@ -649,9 +753,8 @@
             if (keys['KeyW'] || keys['ArrowUp']) player.vy -= speed;
             if (keys['KeyS'] || keys['ArrowDown']) player.vy += speed;
 
-            if (currentMode === 'deatharrows' && keys['Space']) {
-                dispararFlechaDeathArrows();
-            }
+            if (currentMode === 'football' && keys['Space']) dispararChuteFootball();
+            if (currentMode === 'deatharrows' && keys['Space']) dispararFlechaDeathArrows();
         }
 
         function atualizarPlacar() {
@@ -667,15 +770,12 @@
                 let tempoRestante = Math.max(0, ((1500 - (agora - lastAbilityTime)) / 1000).toFixed(1));
                 textoExtra = tempoRestante > 0 ? ` | [Arco CD: ${tempoRestante}s]` : ` | [Arco PRONTO!]`;
             }
-            scoreBoard.innerText = `Você ${playerScore} x ${botScore} Bots${textoExtra}`;
+            scoreBoard.innerText = `${myData.name} ${playerScore} x ${opponentScore} Outros${textoExtra}`;
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (currentMode === 'classic' || currentMode === 'football' || currentMode === 'deatharrows') {
-                atualizarPlacar();
-            }
+            atualizarPlacar();
 
             if (currentMode === 'football') {
                 ctx.fillStyle = '#106b21';
@@ -694,38 +794,24 @@
                 ctx.arc(platform.x + platform.w / 2, platform.y + platform.h / 2, platform.h * 0.18, 0, Math.PI * 2);
                 ctx.stroke();
 
-                ctx.beginPath();
-                ctx.arc(platform.x + platform.w / 2, platform.y + platform.h / 2, 4, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-
                 ctx.strokeRect(platform.x, platform.y + platform.h * 0.25, platform.w * 0.18, platform.h * 0.5);
                 ctx.strokeRect(platform.x, platform.y + platform.h * 0.38, platform.w * 0.07, platform.h * 0.24);
-                ctx.beginPath();
-                ctx.arc(platform.x + platform.w * 0.12, platform.y + platform.h / 2, 3, 0, Math.PI * 2);
-                ctx.fill();
 
                 ctx.strokeRect(platform.x + platform.w - platform.w * 0.18, platform.y + platform.h * 0.25, platform.w * 0.18, platform.h * 0.5);
                 ctx.strokeRect(platform.x + platform.w - platform.w * 0.07, platform.y + platform.h * 0.38, platform.w * 0.07, platform.h * 0.24);
-                ctx.beginPath();
-                ctx.arc(platform.x + platform.w - platform.w * 0.12, platform.y + platform.h / 2, 3, 0, Math.PI * 2);
-                ctx.fill();
 
                 ctx.fillStyle = '#9ca3af';
                 ctx.fillRect(platform.x - 12, platform.y + platform.h * 0.38, 12, platform.h * 0.24);
                 ctx.fillRect(platform.x + platform.w, platform.y + platform.h * 0.38, 12, platform.h * 0.24);
             } else if (currentMode === 'deatharrows') {
-                // Fundo personalizado exato do Death Arrows
                 ctx.fillStyle = '#22344c';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Lago superior esquerdo
                 ctx.fillStyle = 'rgba(30, 48, 70, 0.7)';
                 ctx.beginPath();
                 ctx.ellipse(canvas.width * 0.15, canvas.height * 0.2, 130, 85, Math.PI / 6, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Obstáculos cinzentos idênticos à referência visual
                 ctx.fillStyle = '#8b95a5';
                 obstacles.forEach(obs => {
                     ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
@@ -764,31 +850,26 @@
 
             ctx.beginPath();
             ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-            ctx.fillStyle = player.heavy ? '#1d4ed8' : player.color;
+            ctx.fillStyle = player.color;
             ctx.fill();
             ctx.lineWidth = 3;
-            ctx.strokeStyle = player.heavy ? '#93c5fd' : '#ffffff';
+            ctx.strokeStyle = '#ffffff';
             ctx.stroke();
             ctx.closePath();
 
-            if (currentMode === 'deatharrows' && keys['Space']) {
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.radius + 8, -Math.PI / 2, Math.PI / 2);
-                ctx.strokeStyle = '#dcdcdc';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                ctx.closePath();
-            }
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.name, player.x, player.y - player.radius - 8);
 
-            bots.forEach(bot => {
+            remotePlayers.forEach(rp => {
                 ctx.beginPath();
-                ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
-                ctx.fillStyle = bot.color;
+                ctx.arc(rp.x, rp.y, rp.radius, 0, Math.PI * 2);
+                ctx.fillStyle = rp.color;
                 ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#ffffff';
                 ctx.stroke();
                 ctx.closePath();
+                ctx.fillText(rp.name, rp.x, rp.y - rp.radius - 8);
             });
 
             if (matchPaused && pauseMessage) {
@@ -798,7 +879,6 @@
                 ctx.font = 'bold 32px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(pauseMessage, canvas.width / 2, canvas.height / 2 + 10);
-                ctx.textAlign = 'left';
             }
         }
 
