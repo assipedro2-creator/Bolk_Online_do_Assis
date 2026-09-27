@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolk Online</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #1a1b26;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #menu-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #181922;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .menu-box {
+            background-color: #222330;
+            width: 380px;
+            padding: 35px 30px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .menu-box h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            color: #ffffff;
+        }
+
+        .menu-select {
+            width: 100%;
+            padding: 12px 15px;
+            background-color: #ffffff;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 25px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .menu-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 0;
+            background-color: #d93838;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: #ef4444;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+            background: #111218;
+        }
+
+        canvas {
+            display: block;
+            background: #161720;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        #back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #d93838;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 20;
+        }
+
+        #back-btn:hover {
+            background: #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu-container">
+        <div class="menu-box">
+            <h1>BOLK ONLINE</h1>
+            <select id="gameModeSelect" class="menu-select">
+                <option value="classic">Modo: Classic (Empurrar)</option>
+                <option value="football">Modo: Football</option>
+                <option value="deatharrows">Modo: Death Arrows</option>
+            </select>
+            <div class="menu-buttons">
+                <button class="btn" id="createRoomBtn">Criar Sala</button>
+                <button class="btn" id="joinRoomBtn">Entrar em Sala</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <button id="back-btn" onclick="voltarMenu()">Sair</button>
+        <div id="hud">Placar: <span id="score-board">Você 0 x 0 Bots</span></div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        const menuContainer = document.getElementById('menu-container');
+        const gameContainer = document.getElementById('game-container');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const joinRoomBtn = document.getElementById('joinRoomBtn');
+        const gameModeSelect = document.getElementById('gameModeSelect');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreBoard = document.getElementById('score-board');
+
+        let gameRunning = false;
+        let animationFrameId = null;
+        let currentMode = 'classic';
+        let playerScore = 0;
+        let botScore = 0;
+        let matchPaused = false;
+        let pauseMessage = '';
+        let pauseTimer = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => { 
+            keys[e.code] = true; 
+            if (e.code === 'Space') {
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        let player, bots, platform, obstacles, ball, arrows, spawnPoints;
+        let lastAbilityTime = 0;
+
+        function iniciarJogo() {
+            currentMode = gameModeSelect.value;
+            playerScore = 0;
+            botScore = 0;
+            matchPaused = false;
+            menuContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            resizeCanvas();
+            resetEntities();
+            gameRunning = true;
+            loop();
+        }
+
+        createRoomBtn.addEventListener('click', iniciarJogo);
+        joinRoomBtn.addEventListener('click', iniciarJogo);
+
+        function voltarMenu() {
+            gameRunning = false;
+            matchPaused = false;
+            if (pauseTimer) clearTimeout(pauseTimer);
+            cancelAnimationFrame(animationFrameId);
+            gameContainer.style.display = 'none';
+            menuContainer.style.display = 'flex';
+        }
+
+        function resetEntities() {
+            const w = canvas.width;
+            const h = canvas.height;
+            arrows = [];
+
+            if (currentMode === 'football') {
+                platform = {
+                    x: w / 2 - 480,
+                    y: h / 2 - 300,
+                    w: 960,
+                    h: 600,
+                    isFootballField: true
+                };
+
+                player = {
+                    x: w / 2 - 300,
+                    y: h / 2,
+                    vx: 0,
+                    vy: 0,
+                    radius: 22,
+                    mass: 1.5,
+                    color: '#3b82f6',
+                    heavy: false,
+                    isPlayer: true
+                };
+
+                bots = [
+                    {
+                        x: w / 2 + 300,
+                        y: h / 2,
+                        vx: 0,
+                        vy: 0,
+                        radius: 22,
+                        mass: 1.5,
+                        color: '#ef4444',
+                        heavy: false,
+                        isPlayer: false
+                    }
+                ];
+
+                ball = {
+                    x: w / 2,
+                    y: h / 2,
+                    vx: 0,
+                    vy: 0,
+                    radius: 14,
+                    mass: 0.1,
+                    color: '#ffffff'
+                };
+                obstacles = [];
+            } else if (currentMode === 'deatharrows') {
+                platform = { isDeathArrowsMap: true };
+                
+                // Pontos de spawn exatos baseados nos pontos vermelhos da imagem
+                spawnPoints = [
+                    { x: w * 0.12, y: h * 0.18 }, // Superior esquerdo (lago)
+                    { x: w * 0.28, y: h * 0.12 }, // Plataforma L superior esquerda
+                    { x: w * 0.60, y: h * 0.08 }, // Bloco superior meio
+                    { x: w * 0.90, y: h * 0.28 }, // Plataforma superior direita
+                    { x: w * 0.95, y: h * 0.65 }, // Plataforma direita média
+                    { x: w * 0.88, y: h * 0.92 }, // Inferior direita
+                    { x: w * 0.36, y: h * 0.92 }, // Inferior centro-esquerda
+                    { x: w * 0.08, y: h * 0.82 }  // Inferior esquerda
+                ];
+
+                // Escolher spawns aleatórios para o player e bot
+                let sp1 = Math.floor(Math.random() * spawnPoints.length);
+                let sp2;
+                do {
+                    sp2 = Math.floor(Math.random() * spawnPoints.length);
+                } while (sp2 === sp1);
+
+                player = {
+                    x: spawnPoints[sp1].x,
+                    y: spawnPoints[sp1].y,
+                    vx: 0,
+                    vy: 0,
+                    radius: 22,
+                    mass: 1.5,
+                    color: '#3b82f6',
+                    heavy: false,
+                    isPlayer: true
+                };
+
+                bots = [
+                    {
+                        x: spawnPoints[sp2].x,
+                        y: spawnPoints[sp2].y,
+                        vx: 0,
+                        vy: 0,
+                        radius: 22,
+                        mass: 1.5,
+                        color: '#ef4444',
+                        heavy: false,
+                        isPlayer: false
+                    }
+                ];
+
+                ball = null;
+
+                // Obstáculos exatos da imagem de referência do Death Arrows
+                obstacles = [
+                    // Canto superior esquerdo (Plataforma L)
+                    { x: w * 0.22, y: h * 0.08, w: 45, h: 12 },
+                    { x: w * 0.28, y: h * 0.08, w: 12, h: 35 },
+                    
+                    // Plataforma meio-esquerda em L
+                    { x: w * 0.15, y: h * 0.38, w: 40, h: 12 },
+                    { x: w * 0.15, y: h * 0.35, w: 12, h: 25 },
+
+                    // Canto superior direito (blocos e plataforma L)
+                    { x: w * 0.58, y: h * 0.04, w: 30, h: 15 },
+                    { x: w * 0.58, y: h * 0.07, w: 12, h: 20 },
+                    { x: w * 0.88, y: h * 0.22, w: 80, h: 12 },
+                    { x: w * 0.88, y: h * 0.18, w: 12, h: 20 },
+
+                    // Lateral direita média
+                    { x: w * 0.86, y: h * 0.55, w: 35, h: 12 },
+                    { x: w * 0.92, y: h * 0.58, w: 12, h: 25 },
+
+                    // Canto inferior direito
+                    { x: w * 0.85, y: h * 0.88, w: 75, h: 12 },
+                    { x: w * 0.85, y: h * 0.85, w: 12, h: 20 },
+
+                    // Fundo inferior (portas/blocos centrais)
+                    { x: w * 0.34, y: h * 0.88, w: 80, h: 12 },
+                    { x: w * 0.46, y: h * 0.82, w: 12, h: 18 },
+                    { x: w * 0.46, y: h * 0.82, w: 75, h: 12 },
+                    { x: w * 0.52, y: h * 0.76, w: 12, h: 18 },
+
+                    // Canto inferior esquerdo
+                    { x: w * 0.04, y: h * 0.78, w: 55, h: 12 },
+                    { x: w * 0.04, y: h * 0.82, w: 12, h: 20 },
+                    { x: w * 0.01, y: h * 0.85, w: 40, h: 12 }
+                ];
+            } else {
+                const platformWidth = 700;
+
+                platform = {
+                    x: w / 2 - platformWidth / 2,
+                    y: h / 2 + 100,
+                    w: platformWidth,
+                    h: 30,
+                    isFootballField: false
+                };
+
+                player = {
+                    x: w / 2 - 150,
+                    y: h / 2,
+                    vx: 0,
+                    vy: 0,
+                    radius: 22,
+                    mass: 1.5,
+                    color: '#3b82f6',
+                    heavy: false,
+                    isPlayer: true
+                };
+
+                bots = [
+                    {
+                        x: w / 2 + 150,
+                        y: h / 2,
+                        vx: 0,
+                        vy: 0,
+                        radius: 22,
+                        mass: 1.5,
+                        color: '#ef4444',
+                        heavy: false,
+                        isPlayer: false
+                    }
+                ];
+
+                ball = null;
+                obstacles = [];
+            }
+        }
+
+        function lidarComEliminacao(quemMorreu) {
+            if (quemMorreu === 'jogador') {
+                botScore++;
+                pauseMessage = 'PONTO DOS BOTS!';
+            } else {
+                playerScore++;
+                pauseMessage = 'PONTO DO JOGADOR!';
+            }
+            atualizarPlacar();
+
+            if (checarFimDeJogo()) return;
+
+            matchPaused = true;
+            resetEntities();
+
+            let segundosRestantes = 3;
+            pauseMessage += ` (Reiniciando em ${segundosRestantes}s)`;
+
+            let intervalo = setInterval(() => {
+                segundosRestantes--;
+                if (segundosRestantes > 0) {
+                    pauseMessage = (quemMorreu === 'jogador' ? 'PONTO DOS BOTS!' : 'PONTO DO JOGADOR!') + ` (Reiniciando em ${segundosRestantes}s)`;
+                } else {
+                    clearInterval(intervalo);
+                    matchPaused = false;
+                    pauseMessage = '';
+                }
+            }, 1000);
+        }
+
+        function dispararFlechaDeathArrows() {
+            if (currentMode !== 'deatharrows' || !gameRunning || matchPaused) return;
+            const agora = Date.now();
+            if (agora - lastAbilityTime >= 1500) { // Cooldown de 1.5s
+                lastAbilityTime = agora;
+                
+                let targetX = bots.length > 0 ? bots[0].x : canvas.width / 2;
+                let targetY = bots.length > 0 ? bots[0].y : canvas.height / 2;
+                let angle = Math.atan2(targetY - player.y, targetX - player.x);
+
+                arrows.push({
+                    x: player.x,
+                    y: player.y,
+                    vx: Math.cos(angle) * 12,
+                    vy: Math.sin(angle) * 12,
+                    shooter: player,
+                    noChao: false,
+                    tempoChao: 0
+                });
+            }
+        }
+
+        function checarFimDeJogo() {
+            let limiteGols = 3; // Fim de jogo em 3 x 0
+            if (playerScore >= limiteGols || botScore >= limiteGols) {
+                gameRunning = false;
+                matchPaused = false;
+                let vencedor = playerScore >= limiteGols ? 'Você venceu a partida!' : 'Os bots venceram a partida!';
+                setTimeout(() => {
+                    alert(`Fim de Jogo! ${vencedor} (${playerScore} x ${botScore})`);
+                    voltarMenu();
+                }, 50);
+                return true;
+            }
+            return false;
+        }
+
+        function updatePhysics() {
+            if (matchPaused) return;
+
+            let gravity = 0.4;
+            if (currentMode === 'classic') gravity = 0.55;
+            else if (currentMode === 'football') gravity = 0.12;
+            else if (currentMode === 'deatharrows') gravity = 0.2;
+
+            const friction = currentMode === 'football' ? 0.88 : 0.93;
+
+            const entities = [player, ...bots];
+            if (ball) entities.push(ball);
+
+            entities.forEach(ent => {
+                if (ent === ball) {
+                    ent.vx *= 0.993;
+                    ent.vy *= 0.993;
+                    ent.x += ent.vx;
+                    ent.y += ent.vy;
+                } else {
+                    ent.vy += gravity;
+                    ent.vx *= friction;
+                    ent.vy *= friction;
+                    ent.x += ent.vx;
+                    ent.y += ent.vy;
+                }
+
+                if (currentMode === 'football') {
+                    let minX = platform.x + ent.radius;
+                    let maxX = platform.x + platform.w - ent.radius;
+                    let minY = platform.y + ent.radius;
+                    let maxY = platform.y + platform.h - ent.radius;
+
+                    let golAlturaMin = platform.y + platform.h * 0.35;
+                    let golAlturaMax = platform.y + platform.h * 0.65;
+
+                    if (ent.x < minX) {
+                        if (ent === ball && ent.y > golAlturaMin && ent.y < golAlturaMax) {
+                            lidarComEliminacao('bots');
+                            return;
+                        }
+                        ent.x = minX;
+                        ent.vx *= -0.5;
+                    } else if (ent.x > maxX) {
+                        if (ent === ball && ent.y > golAlturaMin && ent.y < golAlturaMax) {
+                            lidarComEliminacao('jogador');
+                            return;
+                        }
+                        ent.x = maxX;
+                        ent.vx *= -0.5;
+                    }
+
+                    if (ent.y < minY) {
+                        ent.y = minY;
+                        ent.vy *= -0.5;
+                    } else if (ent.y > maxY) {
+                        ent.y = maxY;
+                        ent.vy *= -0.5;
+                    }
+                } else if (currentMode === 'deatharrows') {
+                    if (ent.x < ent.radius) { ent.x = ent.radius; ent.vx *= -0.5; }
+                    if (ent.x > canvas.width - ent.radius) { ent.x = canvas.width - ent.radius; ent.vx *= -0.5; }
+                    if (ent.y < ent.radius) { ent.y = ent.radius; ent.vy *= -0.5; }
+                    if (ent.y > canvas.height - ent.radius) { ent.y = canvas.height - ent.radius; ent.vy *= -0.5; }
+
+                    obstacles.forEach(obs => {
+                        if (ent.x + ent.radius > obs.x && ent.x - ent.radius < obs.x + obs.w &&
+                            ent.y + ent.radius > obs.y && ent.y - ent.radius < obs.y + obs.h) {
+                            let overlapX1 = (ent.x + ent.radius) - obs.x;
+                            let overlapX2 = (obs.x + obs.w) - (ent.x - ent.radius);
+                            let overlapY1 = (ent.y + ent.radius) - obs.y;
+                            let overlapY2 = (obs.y + obs.h) - (ent.y - ent.radius);
+
+                            let minX = Math.min(overlapX1, overlapX2);
+                            let minY = Math.min(overlapY1, overlapY2);
+
+                            if (minX < minY) {
+                                if (overlapX1 < overlapX2) { ent.x = obs.x - ent.radius; ent.vx *= -0.3; }
+                                else { ent.x = obs.x + obs.w + ent.radius; ent.vx *= -0.3; }
+                            } else {
+                                if (overlapY1 < overlapY2) { ent.y = obs.y - ent.radius; ent.vy *= -0.3; }
+                                else { ent.y = obs.y + obs.h + ent.radius; ent.vy *= -0.3; }
+                            }
+                        }
+                    });
+                } else {
+                    if (ent.x > platform.x && ent.x < platform.x + platform.w) {
+                        let targetY = platform.y;
+                        if (ent.y + ent.radius >= targetY && ent.y - ent.radius <= targetY + platform.h && ent.vy > 0) {
+                            ent.y = targetY - ent.radius;
+                            ent.vy *= -0.3;
+                            ent.vx *= 0.85;
+                        }
+                    }
+
+                    let morreu = false;
+                    if (ent.y > canvas.height + 150 || ent.x < -200 || ent.x > canvas.width + 200) {
+                        morreu = true;
+                    } else if (currentMode === 'classic' && ent.y < -120) {
+                        morreu = true;
+                    }
+
+                    if (morreu) {
+                        if (ent.isPlayer) {
+                            lidarComEliminacao('jogador');
+                        } else if (bots.includes(ent)) {
+                            lidarComEliminacao('bot');
+                        }
+                    }
+                }
+            });
+
+            // Atualização e colisões das flechas no Death Arrows
+            if (currentMode === 'deatharrows') {
+                for (let i = arrows.length - 1; i >= 0; i--) {
+                    let arrow = arrows[i];
+
+                    if (!arrow.noChao) {
+                        arrow.x += arrow.vx;
+                        arrow.y += arrow.vy;
+
+                        let bateuChao = arrow.y >= canvas.height - 10;
+                        obstacles.forEach(obs => {
+                            if (arrow.x > obs.x && arrow.x < obs.x + obs.w && arrow.y > obs.y && arrow.y < obs.y + obs.h) {
+                                bateuChao = true;
+                            }
+                        });
+
+                        if (bateuChao) {
+                            arrow.noChao = true;
+                            arrow.tempoChao = Date.now();
+                        }
+
+                        entities.forEach(ent => {
+                            if (ent !== arrow.shooter) {
+                                let dist = Math.hypot(ent.x - arrow.x, ent.y - arrow.y);
+                                if (dist < ent.radius + 5) {
+                                    if (ent.isPlayer) {
+                                        lidarComEliminacao('jogador');
+                                    } else {
+                                        lidarComEliminacao('bot');
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        // Flecha no chão ativa por 6.7 segundos
+                        if (Date.now() - arrow.tempoChao > 6700) {
+                            arrows.splice(i, 1);
+                            continue;
+                        }
+
+                        entities.forEach(ent => {
+                            let dist = Math.hypot(ent.x - arrow.x, ent.y - arrow.y);
+                            if (dist < ent.radius + 8) {
+                                if (ent.isPlayer) {
+                                    lidarComEliminacao('jogador');
+                                } else {
+                                    lidarComEliminacao('bot');
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        function handleControls() {
+            if (matchPaused) return;
+
+            let speed = 0.55;
+            if (currentMode === 'classic') speed = 0.45;
+            else if (currentMode === 'football') speed = 0.48;
+            else if (currentMode === 'deatharrows') speed = 0.5;
+
+            player.heavy = keys['ShiftLeft'] || keys['ShiftRight'];
+            if (player.heavy) speed *= 0.5;
+
+            if (keys['KeyA'] || keys['ArrowLeft']) player.vx -= speed;
+            if (keys['KeyD'] || keys['ArrowRight']) player.vx += speed;
+            if (keys['KeyW'] || keys['ArrowUp']) player.vy -= speed;
+            if (keys['KeyS'] || keys['ArrowDown']) player.vy += speed;
+
+            if (currentMode === 'deatharrows' && keys['Space']) {
+                dispararFlechaDeathArrows();
+            }
+        }
+
+        function atualizarPlacar() {
+            let textoExtra = "";
+            let agora = Date.now();
+            if (currentMode === 'classic') {
+                let tempoRestante = Math.max(0, ((2400 - (agora - lastAbilityTime)) / 1000).toFixed(1));
+                textoExtra = tempoRestante > 0 ? ` | [Espaço CD: ${tempoRestante}s]` : ` | [Espaço PRONTO!]`;
+            } else if (currentMode === 'football') {
+                let tempoRestante = Math.max(0, ((700 - (agora - lastAbilityTime)) / 1000).toFixed(1));
+                textoExtra = tempoRestante > 0 ? ` | [Chute CD: ${tempoRestante}s]` : ` | [Chute PRONTO!]`;
+            } else if (currentMode === 'deatharrows') {
+                let tempoRestante = Math.max(0, ((1500 - (agora - lastAbilityTime)) / 1000).toFixed(1));
+                textoExtra = tempoRestante > 0 ? ` | [Arco CD: ${tempoRestante}s]` : ` | [Arco PRONTO!]`;
+            }
+            scoreBoard.innerText = `Você ${playerScore} x ${botScore} Bots${textoExtra}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (currentMode === 'classic' || currentMode === 'football' || currentMode === 'deatharrows') {
+                atualizarPlacar();
+            }
+
+            if (currentMode === 'football') {
+                ctx.fillStyle = '#106b21';
+                ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(platform.x, platform.y, platform.w, platform.h);
+
+                ctx.beginPath();
+                ctx.moveTo(platform.x + platform.w / 2, platform.y);
+                ctx.lineTo(platform.x + platform.w / 2, platform.y + platform.h);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(platform.x + platform.w / 2, platform.y + platform.h / 2, platform.h * 0.18, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(platform.x + platform.w / 2, platform.y + platform.h / 2, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                ctx.strokeRect(platform.x, platform.y + platform.h * 0.25, platform.w * 0.18, platform.h * 0.5);
+                ctx.strokeRect(platform.x, platform.y + platform.h * 0.38, platform.w * 0.07, platform.h * 0.24);
+                ctx.beginPath();
+                ctx.arc(platform.x + platform.w * 0.12, platform.y + platform.h / 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeRect(platform.x + platform.w - platform.w * 0.18, platform.y + platform.h * 0.25, platform.w * 0.18, platform.h * 0.5);
+                ctx.strokeRect(platform.x + platform.w - platform.w * 0.07, platform.y + platform.h * 0.38, platform.w * 0.07, platform.h * 0.24);
+                ctx.beginPath();
+                ctx.arc(platform.x + platform.w - platform.w * 0.12, platform.y + platform.h / 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#9ca3af';
+                ctx.fillRect(platform.x - 12, platform.y + platform.h * 0.38, 12, platform.h * 0.24);
+                ctx.fillRect(platform.x + platform.w, platform.y + platform.h * 0.38, 12, platform.h * 0.24);
+            } else if (currentMode === 'deatharrows') {
+                // Fundo personalizado exato do Death Arrows
+                ctx.fillStyle = '#22344c';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Lago superior esquerdo
+                ctx.fillStyle = 'rgba(30, 48, 70, 0.7)';
+                ctx.beginPath();
+                ctx.ellipse(canvas.width * 0.15, canvas.height * 0.2, 130, 85, Math.PI / 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Obstáculos cinzentos idênticos à referência visual
+                ctx.fillStyle = '#8b95a5';
+                obstacles.forEach(obs => {
+                    ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                });
+            } else {
+                ctx.fillStyle = '#2d2e3d';
+                ctx.fillRect(platform.x, platform.y, platform.w, platform.h);
+                ctx.strokeStyle = '#4e5068';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(platform.x, platform.y, platform.w, platform.h);
+            }
+
+            if (ball) {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fillStyle = ball.color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000000';
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+            if (currentMode === 'deatharrows' && arrows) {
+                arrows.forEach(arrow => {
+                    ctx.beginPath();
+                    ctx.arc(arrow.x, arrow.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.strokeStyle = '#d93838';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.closePath();
+                });
+            }
+
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = player.heavy ? '#1d4ed8' : player.color;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = player.heavy ? '#93c5fd' : '#ffffff';
+            ctx.stroke();
+            ctx.closePath();
+
+            if (currentMode === 'deatharrows' && keys['Space']) {
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius + 8, -Math.PI / 2, Math.PI / 2);
+                ctx.strokeStyle = '#dcdcdc';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.closePath();
+            }
+
+            bots.forEach(bot => {
+                ctx.beginPath();
+                ctx.arc(bot.x, bot.y, bot.radius, 0, Math.PI * 2);
+                ctx.fillStyle = bot.color;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+                ctx.closePath();
+            });
+
+            if (matchPaused && pauseMessage) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, canvas.height / 2 - 50, canvas.width, 100);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(pauseMessage, canvas.width / 2, canvas.height / 2 + 10);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        function loop() {
+            if (!gameRunning) return;
+            handleControls();
+            updatePhysics();
+            draw();
+            animationFrameId = requestAnimationFrame(loop);
+        }
+    </script>
+</body>
+</html>
